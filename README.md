@@ -1,8 +1,14 @@
-# claudebook
+<p align="center">
+  <img src="logo.png" alt="ClaudeBook" width="200" />
+</p>
 
-Recipes for Claude Code — commands, skills, and configs.
+<p align="center">
+  Recipes for Claude Code — commands, skills, and configs.
+</p>
 
-A curated collection of reusable [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills that codify common development workflows. Drop them into any project and let Claude handle the tedious parts — committing, rebasing, opening PRs, triaging review feedback, and implementing issues — all following your team's conventions.
+<p align="center">
+  A curated collection of reusable <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> skills that codify common development workflows. Drop them into any project and let Claude handle the tedious parts — committing, rebasing, opening PRs, triaging review feedback, and implementing issues — all following your team's conventions.
+</p>
 
 ## What's inside
 
