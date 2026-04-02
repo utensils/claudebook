@@ -1,0 +1,992 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+
+const commands = [
+  {
+    name: '/commit-changes',
+    emoji: '📝',
+    color: 'var(--coral)',
+    summary: 'Stage & commit with conventional commits',
+    description: 'Runs pre-flight checks (format, lint, typecheck, test), reviews your diff, stages files individually, and creates a commit using conventional commit format. Automatically groups unrelated changes into separate commits and refuses to stage secrets.',
+    steps: [
+      'Detects your toolchain and runs format, lint, typecheck, and tests',
+      'Reviews all modified and untracked files',
+      'Stages files individually — never uses git add -A',
+      'Refuses to stage secrets (.env, credentials)',
+      'Groups unrelated changes into separate commits',
+      'Creates commits using conventional commit format',
+    ],
+  },
+  {
+    name: '/implement-issue',
+    emoji: '🔨',
+    color: 'var(--teal)',
+    summary: 'Fetch an issue and implement it end-to-end',
+    description: 'Takes a GitHub issue number, fetches the full issue with comments, researches the codebase, asks clarifying questions if the spec is ambiguous, enters plan mode for your approval, then implements the changes with tests.',
+    steps: [
+      'Fetches the issue details and all comments via gh CLI',
+      'Researches affected files, tests, and documentation',
+      'Asks clarifying questions if the spec is ambiguous',
+      'Enters plan mode and waits for your approval',
+      'Implements changes with tests, using subagents for parallel work',
+      'Runs full verification suite before reporting back',
+    ],
+  },
+  {
+    name: '/incorporate-feedback',
+    emoji: '💬',
+    color: 'var(--golden-dark)',
+    summary: 'Triage and address PR review comments',
+    description: 'Fetches all review comments on the current branch\'s PR, triages each one (incorporate vs. decline), makes the changes, responds to every comment with what was done and why, then commits and pushes.',
+    steps: [
+      'Identifies the current branch\'s open PR',
+      'Fetches all review comments — top-level and inline',
+      'Triages each comment: incorporate or decline with reasoning',
+      'Makes the requested changes and re-runs checks',
+      'Responds to every comment explaining what was done',
+      'Commits and pushes the feedback changes',
+    ],
+  },
+  {
+    name: '/pull-request',
+    emoji: '🚀',
+    color: 'var(--coral-light)',
+    summary: 'Open a PR with a structured description',
+    description: 'Runs pre-flight checks, rebases on origin/main, analyzes the full diff, and opens a PR with a structured body including summary, complexity notes, test steps, and a checklist.',
+    steps: [
+      'Runs format, lint, typecheck, and test checks',
+      'Rebases on origin/main and resolves any conflicts',
+      'Analyzes the full diff across all commits',
+      'Drafts a structured PR with summary, complexity notes, test steps',
+      'Pushes the branch and creates the PR via gh CLI',
+      'Supports draft mode with /pull-request draft',
+    ],
+  },
+  {
+    name: '/rebase-on-main',
+    emoji: '🔀',
+    color: 'var(--teal-dark)',
+    summary: 'Rebase on main and resolve conflicts',
+    description: 'Checks for uncommitted work, fetches and rebases on origin/main, resolves conflicts file-by-file (asking for help on ambiguous ones), and verifies everything still passes.',
+    steps: [
+      'Checks for uncommitted changes — warns you, never stashes',
+      'Fetches origin/main and rebases your branch',
+      'Resolves conflicts file-by-file with full context',
+      'Asks for help on ambiguous conflicts',
+      'Re-runs all checks after rebase to ensure nothing broke',
+      'Reports what happened: commits rebased, conflicts resolved',
+    ],
+  },
+];
+---
+
+<Layout title="ClaudeBook — Recipes for Claude Code">
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#hero" class="nav-brand">
+        <img src={`${base}logo.png`} alt="" width="32" height="32" />
+        <span>ClaudeBook</span>
+      </a>
+      <div class="nav-links">
+        <a href="#commands">Commands</a>
+        <a href="#quickstart">Quick Start</a>
+        <a href="#custom">Custom</a>
+        <a href="https://github.com/utensils/claudebook" class="nav-gh" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero" class="hero">
+    <div class="hero-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-logo-wrap">
+        <img src={`${base}logo.png`} alt="ClaudeBook logo" class="hero-logo" width="220" height="220" />
+        <div class="hero-sparkles">
+          <span class="sparkle s1">✦</span>
+          <span class="sparkle s2">✦</span>
+          <span class="sparkle s3">✧</span>
+        </div>
+      </div>
+      <h1 class="hero-title">
+        <span class="hero-title-recipes">Recipes</span>
+        <span class="hero-title-for">for</span>
+        <span class="hero-title-claude">Claude Code</span>
+      </h1>
+      <p class="hero-subtitle">
+        A curated collection of reusable commands that codify common development workflows. Drop them into any project and let Claude handle the tedious parts.
+      </p>
+      <div class="hero-actions">
+        <a href="#quickstart" class="btn btn-primary">Get Started</a>
+        <a href="https://github.com/utensils/claudebook" class="btn btn-secondary" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.4em; vertical-align: -3px;"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+      <div class="hero-terminal">
+        <div class="terminal-bar">
+          <span class="terminal-dot" style="background: var(--coral);"></span>
+          <span class="terminal-dot" style="background: var(--golden);"></span>
+          <span class="terminal-dot" style="background: var(--teal);"></span>
+          <span class="terminal-title">Terminal</span>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-line">
+            <span class="terminal-prompt">$</span>
+            <span class="terminal-cmd typing">/commit-changes</span>
+          </div>
+          <div class="terminal-output">
+            <span class="t-muted">Running pre-flight checks...</span><br/>
+            <span class="t-success">✓ format</span> · <span class="t-success">✓ lint</span> · <span class="t-success">✓ typecheck</span> · <span class="t-success">✓ test</span><br/>
+            <span class="t-muted">Staging files individually...</span><br/>
+            <span class="t-info">feat(api): add rate limiting middleware</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMANDS -->
+  <section id="commands" class="commands-section">
+    <div class="section-inner">
+      <h2 class="section-title reveal">
+        <span class="section-title-accent">5 Commands</span>
+        <span class="section-title-sub">to supercharge your workflow</span>
+      </h2>
+      <div class="commands-grid">
+        {commands.map((cmd, i) => (
+          <div class="command-card reveal" style={`--card-color: ${cmd.color}; --delay: ${i * 0.1}s`}>
+            <div class="command-card-header">
+              <span class="command-emoji">{cmd.emoji}</span>
+              <code class="command-name">{cmd.name}</code>
+            </div>
+            <p class="command-summary">{cmd.summary}</p>
+            <p class="command-desc">{cmd.description}</p>
+            <details class="command-details">
+              <summary>How it works</summary>
+              <ol class="command-steps">
+                {cmd.steps.map((step) => (
+                  <li>{step}</li>
+                ))}
+              </ol>
+            </details>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK START -->
+  <section id="quickstart" class="quickstart-section">
+    <div class="section-inner">
+      <h2 class="section-title reveal">
+        <span class="section-title-accent">Quick Start</span>
+        <span class="section-title-sub">up and running in 3 steps</span>
+      </h2>
+      <div class="steps-grid">
+        <div class="step-card reveal" style="--delay: 0s">
+          <div class="step-number">1</div>
+          <h3>Clone the repo</h3>
+          <div class="code-block">
+            <code>git clone https://github.com/utensils/claudebook.git</code>
+            <button class="copy-btn" data-copy="git clone https://github.com/utensils/claudebook.git" aria-label="Copy to clipboard">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="step-card reveal" style="--delay: 0.1s">
+          <div class="step-number">2</div>
+          <h3>Copy commands into your project</h3>
+          <div class="code-block">
+            <code>cp claudebook/commands/*.md \<br/>  your-project/.claude/commands/</code>
+            <button class="copy-btn" data-copy="cp claudebook/commands/*.md your-project/.claude/commands/" aria-label="Copy to clipboard">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="step-card reveal" style="--delay: 0.2s">
+          <div class="step-number">3</div>
+          <h3>Use them in Claude Code</h3>
+          <div class="code-block">
+            <code>/commit-changes<br/>/pull-request<br/>/implement-issue #42</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CUSTOM COMMANDS -->
+  <section id="custom" class="custom-section">
+    <div class="section-inner">
+      <h2 class="section-title reveal">
+        <span class="section-title-accent">Write Your Own</span>
+        <span class="section-title-sub">commands are just markdown</span>
+      </h2>
+      <div class="custom-content reveal">
+        <div class="custom-text">
+          <p>A command is a markdown file that tells Claude Code how to perform a task. Drop it in <code>.claude/commands/</code> and it becomes a slash command.</p>
+          <ul class="custom-tips">
+            <li><strong>Be explicit</strong> — Specify exact commands, flags, and tool names</li>
+            <li><strong>Handle failure</strong> — Tell Claude what to do when a step fails</li>
+            <li><strong>Use <code>$ARGUMENTS</code></strong> — Reference user input for parameterized commands</li>
+            <li><strong>Scope narrowly</strong> — One command per workflow, compose them together</li>
+          </ul>
+        </div>
+        <div class="custom-example">
+          <div class="code-block code-block-dark">
+            <div class="code-filename">my-command.md</div>
+            <pre><code>{`One-line description of what this command does.
+
+## Steps
+
+1. **Step name** — What to do:
+   - Specific sub-steps with exact commands
+   - Decision points and branching logic
+   - Error handling instructions
+
+2. **Next step** — Continue the workflow:
+   - More sub-steps
+   ...`}</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTRIBUTE -->
+  <section class="contribute-section">
+    <div class="section-inner">
+      <div class="contribute-card reveal">
+        <div class="contribute-icon">🤝</div>
+        <h2>Contributions Welcome</h2>
+        <p>Have a command that's been useful across projects? We'd love to include it. Open a PR on GitHub — just make sure the steps are concrete, actionable, and general enough to work beyond a single project.</p>
+        <a href="https://github.com/utensils/claudebook" class="btn btn-primary" target="_blank" rel="noopener">
+          Contribute on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src={`${base}logo.png`} alt="" width="40" height="40" />
+        <span>ClaudeBook</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/utensils/claudebook" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://docs.anthropic.com/en/docs/claude-code" target="_blank" rel="noopener">Claude Code Docs</a>
+        <a href="https://github.com/utensils/claudebook/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      </div>
+      <p class="footer-note">Made with ✦ for the Claude Code community</p>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const delay = getComputedStyle(entry.target).getPropertyValue('--delay') || '0s';
+            entry.target.style.transitionDelay = delay;
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+    // Copy buttons
+    document.querySelectorAll('.copy-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const text = (btn as HTMLElement).dataset.copy || '';
+        navigator.clipboard.writeText(text);
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 1500);
+      });
+    });
+
+    // Nav scroll effect
+    const nav = document.querySelector('.nav');
+    window.addEventListener('scroll', () => {
+      nav?.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // Terminal typing animation
+    const typingEl = document.querySelector('.typing');
+    if (typingEl) {
+      const commands = ['/commit-changes', '/pull-request', '/implement-issue #42', '/rebase-on-main', '/incorporate-feedback'];
+      let cmdIndex = 0;
+      const cycle = () => {
+        cmdIndex = (cmdIndex + 1) % commands.length;
+        typingEl.classList.remove('typing');
+        setTimeout(() => {
+          typingEl.textContent = commands[cmdIndex];
+          typingEl.classList.add('typing');
+        }, 300);
+      };
+      setInterval(cycle, 3500);
+    }
+  </script>
+</Layout>
+
+<style>
+  /* ─── NAV ──────────────────────────────────── */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 0.8rem 1.5rem;
+    transition: background 0.3s, box-shadow 0.3s, backdrop-filter 0.3s;
+  }
+  .nav.scrolled {
+    background: rgba(255, 248, 231, 0.85);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 2px 20px rgba(15, 46, 43, 0.08);
+  }
+  .nav-inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--teal-deep);
+  }
+  .nav-brand:hover { color: var(--teal); }
+  .nav-brand img {
+    border-radius: 6px;
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.8rem;
+    font-size: 0.92rem;
+    font-weight: 500;
+  }
+  .nav-links a { color: var(--teal-deep); }
+  .nav-links a:hover { color: var(--coral); }
+  .nav-gh {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .nav-gh:hover { background: rgba(42, 157, 143, 0.1); }
+
+  /* ─── HERO ─────────────────────────────────── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 1.5rem 4rem;
+    background: linear-gradient(160deg, var(--teal-deep) 0%, var(--teal-dark) 40%, var(--teal) 100%);
+    overflow: hidden;
+  }
+  .hero-bg-shapes {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.08;
+  }
+  .shape-1 {
+    width: 600px;
+    height: 600px;
+    background: var(--golden);
+    top: -200px;
+    right: -150px;
+    animation: float 20s ease-in-out infinite;
+  }
+  .shape-2 {
+    width: 400px;
+    height: 400px;
+    background: var(--coral);
+    bottom: -100px;
+    left: -100px;
+    animation: float 15s ease-in-out infinite reverse;
+  }
+  .shape-3 {
+    width: 250px;
+    height: 250px;
+    background: var(--golden-light);
+    top: 40%;
+    left: 60%;
+    animation: float 18s ease-in-out infinite 3s;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    text-align: center;
+    color: var(--cream);
+  }
+  .hero-logo-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 2rem;
+    animation: logoEntry 0.8s ease-out;
+  }
+  .hero-logo {
+    border-radius: 20px;
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.3));
+    transition: transform 0.3s;
+  }
+  .hero-logo:hover {
+    transform: scale(1.05) rotate(-2deg);
+  }
+  .hero-sparkles {
+    position: absolute;
+    inset: -20px;
+    pointer-events: none;
+  }
+  .sparkle {
+    position: absolute;
+    color: var(--golden);
+    font-size: 1.2rem;
+    animation: sparkle 2s ease-in-out infinite;
+  }
+  .s1 { top: 5%; right: -5%; animation-delay: 0s; }
+  .s2 { bottom: 10%; left: -8%; animation-delay: 0.7s; }
+  .s3 { top: -8%; left: 30%; animation-delay: 1.4s; font-size: 0.9rem; }
+
+  @keyframes sparkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  @keyframes logoEntry {
+    from { opacity: 0; transform: translateY(30px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 1.2rem;
+    animation: fadeUp 0.8s ease-out 0.2s both;
+  }
+  .hero-title-recipes {
+    display: block;
+    color: var(--golden);
+  }
+  .hero-title-for {
+    display: block;
+    font-size: 0.5em;
+    font-weight: 400;
+    opacity: 0.6;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .hero-title-claude {
+    display: block;
+    color: var(--cream);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    opacity: 0.8;
+    max-width: 540px;
+    margin: 0 auto 2rem;
+    line-height: 1.7;
+    animation: fadeUp 0.8s ease-out 0.4s both;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.8s ease-out 0.5s both;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.85rem 1.8rem;
+    border-radius: 12px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    border: none;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+  .btn-primary {
+    background: var(--coral);
+    color: white;
+    box-shadow: 0 4px 15px rgba(231, 111, 81, 0.3);
+  }
+  .btn-primary:hover {
+    color: white;
+    box-shadow: 0 8px 25px rgba(231, 111, 81, 0.4);
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.12);
+    color: var(--cream);
+    border: 1.5px solid rgba(255,255,255,0.2);
+  }
+  .btn-secondary:hover {
+    color: white;
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* Terminal mockup */
+  .hero-terminal {
+    max-width: 520px;
+    margin: 0 auto;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+    animation: fadeUp 0.8s ease-out 0.7s both;
+    text-align: left;
+  }
+  .terminal-bar {
+    background: #1a1a2e;
+    padding: 0.7rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .terminal-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+  }
+  .terminal-title {
+    margin-left: auto;
+    font-size: 0.75rem;
+    opacity: 0.4;
+    font-family: var(--font-mono);
+    color: #ccc;
+  }
+  .terminal-body {
+    background: #0f0f1a;
+    padding: 1.2rem 1.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.8;
+    color: #e0e0e0;
+  }
+  .terminal-line {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .terminal-prompt { color: var(--teal); font-weight: 700; }
+  .terminal-cmd { color: var(--golden); }
+  .t-muted { color: #6b7280; }
+  .t-success { color: var(--teal); }
+  .t-info { color: var(--coral-light); }
+  .terminal-output {
+    padding-left: 1.2rem;
+  }
+
+  /* Typing animation */
+  .typing {
+    display: inline-block;
+    border-right: 2px solid var(--golden);
+    animation: blink 0.8s step-end infinite;
+    padding-right: 2px;
+  }
+  @keyframes blink {
+    50% { border-color: transparent; }
+  }
+
+  /* ─── SECTIONS COMMON ──────────────────────── */
+  .section-inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  .section-title {
+    text-align: center;
+    margin-bottom: 3.5rem;
+  }
+  .section-title-accent {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 700;
+    color: var(--teal-deep);
+  }
+  .section-title-sub {
+    display: block;
+    font-size: 1.05rem;
+    color: var(--teal-dark);
+    opacity: 0.7;
+    margin-top: 0.3rem;
+    font-weight: 400;
+  }
+
+  /* ─── COMMANDS ─────────────────────────────── */
+  .commands-section {
+    padding: var(--section-pad) 0;
+    position: relative;
+  }
+  .commands-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+  .command-card {
+    background: white;
+    border-radius: 18px;
+    padding: 2rem;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 20px rgba(15, 46, 43, 0.06);
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    transition-delay: var(--delay, 0s);
+  }
+  .command-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 35px rgba(15, 46, 43, 0.1);
+    border-color: var(--card-color);
+  }
+  .command-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 0.8rem;
+  }
+  .command-emoji {
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+  .command-name {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--card-color);
+    background: none;
+    padding: 0;
+  }
+  .command-summary {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--teal-deep);
+    margin-bottom: 0.6rem;
+  }
+  .command-desc {
+    font-size: 0.92rem;
+    color: #4a6b68;
+    line-height: 1.65;
+    margin-bottom: 1rem;
+  }
+  .command-details {
+    border-top: 1px solid var(--cream-dark);
+    padding-top: 0.8rem;
+  }
+  .command-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--card-color);
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .command-details summary::before {
+    content: '▸';
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  .command-details[open] summary::before {
+    transform: rotate(90deg);
+  }
+  .command-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .command-steps {
+    margin-top: 0.8rem;
+    padding-left: 1.2rem;
+    font-size: 0.88rem;
+    color: #4a6b68;
+    line-height: 1.8;
+  }
+  .command-steps li {
+    padding-left: 0.3rem;
+  }
+  .command-steps li::marker {
+    color: var(--card-color);
+    font-weight: 700;
+  }
+
+  /* ─── QUICK START ──────────────────────────── */
+  .quickstart-section {
+    padding: var(--section-pad) 0;
+    background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+  }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  .step-card {
+    background: white;
+    border-radius: 18px;
+    padding: 2rem;
+    box-shadow: 0 2px 20px rgba(15, 46, 43, 0.06);
+    transition-delay: var(--delay, 0s);
+  }
+  .step-number {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--teal);
+    color: white;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .step-card h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.15rem;
+    color: var(--teal-deep);
+    margin-bottom: 1rem;
+  }
+
+  /* Code blocks */
+  .code-block {
+    background: var(--teal-darker);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--golden-light);
+    position: relative;
+    overflow-x: auto;
+    line-height: 1.7;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+  .code-block-dark {
+    background: #0f0f1a;
+    color: #e0e0e0;
+    padding: 0;
+    overflow: hidden;
+  }
+  .code-filename {
+    background: #1a1a2e;
+    padding: 0.5rem 1.2rem;
+    font-size: 0.78rem;
+    color: var(--teal);
+    border-bottom: 1px solid #2a2a3e;
+  }
+  .code-block-dark pre {
+    padding: 1.2rem;
+    margin: 0;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    border-radius: 6px;
+    padding: 0.35rem;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+  }
+  .copy-btn:hover {
+    color: white;
+    background: rgba(255,255,255,0.15);
+  }
+  .copy-btn.copied {
+    color: var(--teal);
+  }
+
+  /* ─── CUSTOM COMMANDS ──────────────────────── */
+  .custom-section {
+    padding: var(--section-pad) 0;
+  }
+  .custom-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+  }
+  .custom-text p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    color: #4a6b68;
+  }
+  .custom-text code {
+    background: var(--cream-dark);
+    padding: 0.15rem 0.4rem;
+    border-radius: 5px;
+    color: var(--teal-deep);
+    font-size: 0.85em;
+  }
+  .custom-tips {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .custom-tips li {
+    font-size: 0.95rem;
+    color: #4a6b68;
+    padding-left: 1.5rem;
+    position: relative;
+  }
+  .custom-tips li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--coral);
+    font-weight: 700;
+  }
+  .custom-tips li strong {
+    color: var(--teal-deep);
+  }
+
+  /* ─── CONTRIBUTE ───────────────────────────── */
+  .contribute-section {
+    padding: var(--section-pad) 0;
+    background: var(--cream-dark);
+  }
+  .contribute-card {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 24px;
+    padding: 3rem;
+    box-shadow: 0 4px 30px rgba(15, 46, 43, 0.08);
+  }
+  .contribute-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+  .contribute-card h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: var(--teal-deep);
+    margin-bottom: 1rem;
+  }
+  .contribute-card p {
+    color: #4a6b68;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ─── FOOTER ───────────────────────────────── */
+  .footer {
+    background: var(--teal-deep);
+    color: rgba(255, 248, 231, 0.7);
+    padding: 2.5rem 1.5rem;
+  }
+  .footer-inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--cream);
+  }
+  .footer-brand img {
+    border-radius: 6px;
+  }
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+  }
+  .footer-links a {
+    color: rgba(255, 248, 231, 0.6);
+    transition: color 0.2s;
+  }
+  .footer-links a:hover {
+    color: var(--golden);
+  }
+  .footer-note {
+    font-size: 0.82rem;
+    opacity: 0.5;
+  }
+
+  /* ─── RESPONSIVE ───────────────────────────── */
+  @media (max-width: 768px) {
+    .custom-content {
+      grid-template-columns: 1fr;
+    }
+    .nav-links a:not(.nav-gh) {
+      display: none;
+    }
+    .footer-inner {
+      flex-direction: column;
+      text-align: center;
+    }
+    .commands-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
