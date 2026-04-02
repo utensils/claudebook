@@ -7,10 +7,11 @@ Open a pull request for the current branch against `main`.
 ## Steps
 
 1. **Pre-flight checks** — Before opening the PR, ensure the code is ready:
-   - Run `pnpm format` to format all files
-   - Run `pnpm lint` to check for linting errors
-   - Run `pnpm tsc --noEmit` to verify types compile
-   - Run `pnpm test` to ensure tests pass
+   - Detect the project's toolchain from config files (e.g., `package.json`, `Makefile`, `mix.exs`, `Cargo.toml`, `pyproject.toml`)
+   - Run the project's **format** command (e.g., `prettier`, `mix format`, `cargo fmt`, `ruff format`)
+   - Run the project's **lint** command (e.g., `eslint`, `mix credo`, `cargo clippy`, `ruff check`)
+   - Run the project's **typecheck** command if applicable (e.g., `tsc --noEmit`, `mypy`, `mix dialyzer`)
+   - Run the project's **test** command (e.g., `jest`, `mix test`, `cargo test`, `pytest`)
    - If any check fails, fix the issues before proceeding
 
 2. **Rebase on origin/main** — Ensure the branch is up to date:
@@ -25,11 +26,9 @@ Open a pull request for the current branch against `main`.
 3. **Analyze changes** — Review all commits on this branch vs `origin/main`:
    - Run `git log origin/main..HEAD --oneline` to see all commits
    - Run `git diff origin/main...HEAD` to see the full diff
-   - Identify if any Prisma migration files are included (`prisma/migrations/`)
 
-4. **Draft the PR** — Prepare the PR title, labels, and body:
+4. **Draft the PR** — Prepare the PR title and body:
    - **Title**: Use a concise, descriptive title (under 70 characters)
-   - **Labels**: Add the `migration` label if the branch includes any Prisma migration files
    - **Body** should include these sections:
 
      ### Summary
@@ -44,7 +43,6 @@ Open a pull request for the current branch against `main`.
      ### Checklist
      - [ ] Tests added/updated
      - [ ] Documentation updated (if applicable)
-     - [ ] Migration uses `CREATE INDEX CONCURRENTLY` (if adding indexes)
 
 5. **Push and create** — Push the branch and create the PR:
    - `git push -u origin HEAD`

@@ -69,7 +69,7 @@ Fetches all review comments on the current branch's PR, triages each one (incorp
 
 ### `/pull-request`
 
-Runs pre-flight checks, rebases on `origin/main`, analyzes the full diff, and opens a PR with a structured body including summary, complexity notes, test steps, and a checklist. Automatically adds the `migration` label when Prisma migrations are detected.
+Runs pre-flight checks, rebases on `origin/main`, analyzes the full diff, and opens a PR with a structured body including summary, complexity notes, test steps, and a checklist.
 
 ### `/rebase-on-main`
 
@@ -79,7 +79,7 @@ Checks for uncommitted work, fetches and rebases on `origin/main`, resolves conf
 
 These commands are starting points. Fork and adapt them to match your team's stack and conventions:
 
-- **Swap the toolchain** — The commands reference `pnpm`, `tsc`, and Prisma. Replace these with whatever your project uses (`npm`, `yarn`, `bun`, `ruff`, `cargo`, etc.).
+- **Add toolchain hints** — The commands auto-detect your project's toolchain from config files. If detection isn't working for your setup, add explicit commands to the steps.
 - **Adjust commit conventions** — The commit command uses conventional commits. Modify the format, types, and scopes to match your team's style.
 - **Change the PR template** — Add or remove sections from the PR body to match your team's review process.
 - **Add new commands** — Create a new `.md` file in `commands/` following the same structure: a one-line description, a `## Steps` section with numbered steps, and optional `## Examples`.
