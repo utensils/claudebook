@@ -3,17 +3,17 @@
 </p>
 
 <p align="center">
-  Recipes for Claude Code — commands, skills, and configs.
+  Recipes for Claude Code — commands and configs.
 </p>
 
 <p align="center">
-  A curated collection of reusable <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> skills that codify common development workflows. Drop them into any project and let Claude handle the tedious parts — committing, rebasing, opening PRs, triaging review feedback, and implementing issues — all following your team's conventions.
+  A curated collection of reusable <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> commands that codify common development workflows. Drop them into any project and let Claude handle the tedious parts — committing, rebasing, opening PRs, triaging review feedback, and implementing issues — all following your team's conventions.
 </p>
 
 ## What's inside
 
 ```
-skills/
+commands/
 ├── commit-changes.md       # Stage & commit with conventional commits
 ├── implement-issue.md      # Fetch a GitHub issue and implement it end-to-end
 ├── incorporate-feedback.md # Triage and address PR review comments
@@ -29,21 +29,21 @@ skills/
 git clone https://github.com/utensils/claudebook.git
 ```
 
-### 2. Copy skills into your project
+### 2. Copy commands into your project
 
-Skills live in your project's `.claude/skills/` directory. Copy the ones you want:
+Commands live in your project's `.claude/commands/` directory. Copy the ones you want:
 
 ```sh
-# Copy all skills
-cp claudebook/skills/*.md your-project/.claude/skills/
+# Copy all commands
+cp claudebook/commands/*.md your-project/.claude/commands/
 
-# Or pick individual skills
-cp claudebook/skills/commit-changes.md your-project/.claude/skills/
+# Or pick individual commands
+cp claudebook/commands/commit-changes.md your-project/.claude/commands/
 ```
 
 ### 3. Use them in Claude Code
 
-Once installed, invoke a skill with the slash command syntax:
+Once installed, invoke a command with the slash command syntax:
 
 ```
 /commit-changes
@@ -53,7 +53,7 @@ Once installed, invoke a skill with the slash command syntax:
 /incorporate-feedback
 ```
 
-## Skills
+## Commands
 
 ### `/commit-changes`
 
@@ -77,19 +77,19 @@ Checks for uncommitted work, fetches and rebases on `origin/main`, resolves conf
 
 ## Customization
 
-These skills are starting points. Fork and adapt them to match your team's stack and conventions:
+These commands are starting points. Fork and adapt them to match your team's stack and conventions:
 
-- **Swap the toolchain** — The skills reference `pnpm`, `tsc`, and Prisma. Replace these with whatever your project uses (`npm`, `yarn`, `bun`, `ruff`, `cargo`, etc.).
-- **Adjust commit conventions** — The commit skill uses conventional commits. Modify the format, types, and scopes to match your team's style.
+- **Swap the toolchain** — The commands reference `pnpm`, `tsc`, and Prisma. Replace these with whatever your project uses (`npm`, `yarn`, `bun`, `ruff`, `cargo`, etc.).
+- **Adjust commit conventions** — The commit command uses conventional commits. Modify the format, types, and scopes to match your team's style.
 - **Change the PR template** — Add or remove sections from the PR body to match your team's review process.
-- **Add new skills** — Create a new `.md` file in `skills/` following the same structure: a one-line description, a `## Steps` section with numbered steps, and optional `## Examples`.
+- **Add new commands** — Create a new `.md` file in `commands/` following the same structure: a one-line description, a `## Steps` section with numbered steps, and optional `## Examples`.
 
-## Writing your own skills
+## Writing your own commands
 
-A skill is a markdown file that tells Claude Code how to perform a task. The structure is simple:
+A command is a markdown file that tells Claude Code how to perform a task. The structure is simple:
 
 ```markdown
-One-line description of what this skill does.
+One-line description of what this command does.
 
 ## Steps
 
@@ -103,21 +103,21 @@ One-line description of what this skill does.
    ...
 ```
 
-Tips for effective skills:
+Tips for effective commands:
 
 - **Be explicit** — Specify exact commands, flags, and tool names. Claude follows instructions literally.
 - **Handle failure** — Tell Claude what to do when a step fails (fix it, stop and ask, skip, etc.).
-- **Use `$ARGUMENTS`** — Reference user-provided arguments with `$ARGUMENTS` for parameterized skills (see `implement-issue.md`).
+- **Use `$ARGUMENTS`** — Reference user-provided arguments with `$ARGUMENTS` for parameterized commands (see `implement-issue.md`).
 - **Keep steps ordered** — Claude executes steps sequentially. Put checks before actions and verification after changes.
-- **Scope narrowly** — One skill per workflow. Compose them rather than building monolithic skills.
+- **Scope narrowly** — One command per workflow. Compose them rather than building monolithic commands.
 
 ## Contributing
 
-Contributions are welcome! If you have a skill that's been useful across projects, open a PR. Please ensure:
+Contributions are welcome! If you have a command that's been useful across projects, open a PR. Please ensure:
 
-1. The skill follows the structure outlined in [Writing your own skills](#writing-your-own-skills)
+1. The command follows the structure outlined in [Writing your own commands](#writing-your-own-commands)
 2. Steps are concrete and actionable (not vague or aspirational)
-3. The skill is general enough to be useful beyond a single project
+3. The command is general enough to be useful beyond a single project
 
 ## License
 

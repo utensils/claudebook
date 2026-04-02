@@ -1,5 +1,9 @@
 Open a pull request for the current branch against `main`.
 
+## Arguments
+
+- `$ARGUMENTS` — Pass `draft` to create a draft PR (e.g., `/pull-request draft`). If omitted, creates a regular PR.
+
 ## Steps
 
 1. **Pre-flight checks** — Before opening the PR, ensure the code is ready:
@@ -44,6 +48,7 @@ Open a pull request for the current branch against `main`.
 
 5. **Push and create** — Push the branch and create the PR:
    - `git push -u origin HEAD`
-   - `gh pr create` with the drafted title and body
+   - If `$ARGUMENTS` is `draft`, run `gh pr create --draft` with the drafted title and body
+   - Otherwise, run `gh pr create` with the drafted title and body
 
 6. **Return the PR URL** to the user when done.
