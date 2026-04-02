@@ -1,0 +1,773 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+
+const slashCommands = [
+  { cmd: '/help', aliases: '', desc: 'View available commands' },
+  { cmd: '/clear', aliases: '/reset, /new', desc: 'Clear conversation history and free context' },
+  { cmd: '/config', aliases: '/settings', desc: 'Open settings (theme, model, preferences)' },
+  { cmd: '/vim', aliases: '', desc: 'Toggle Vim keybinding mode' },
+  { cmd: '/debug', aliases: '', desc: 'Troubleshoot session by reading debug logs' },
+  { cmd: '/agents', aliases: '', desc: 'Manage subagent configurations' },
+  { cmd: '/plugin', aliases: '', desc: 'Manage plugins (install, enable, disable)' },
+  { cmd: '/terminal-setup', aliases: '', desc: 'Configure terminal integration' },
+  { cmd: '/desktop', aliases: '', desc: 'Desktop app features (Mac/Windows)' },
+  { cmd: '/upgrade', aliases: '', desc: 'Pro/Max plan upgrade' },
+  { cmd: '/privacy-settings', aliases: '', desc: 'Privacy configuration' },
+];
+
+const shortcuts = [
+  { key: 'Enter / Return', desc: 'Submit message' },
+  { key: 'Escape', desc: 'Cancel / exit current action' },
+  { key: 'Tab', desc: 'Autocomplete file paths' },
+  { key: 'Up / Down', desc: 'Navigate command history' },
+  { key: 'Ctrl+R', desc: 'Reverse search through history' },
+  { key: 'Ctrl+E', desc: 'Open external editor for input' },
+  { key: 'Ctrl+B', desc: 'Background a long-running process' },
+  { key: '! <cmd>', desc: 'Execute shell command directly' },
+];
+
+const cliExecution = [
+  { flag: '--model <name>', desc: 'Set AI model (sonnet, opus, haiku)' },
+  { flag: '-p, --print', desc: 'Non-interactive print mode for scripting' },
+  { flag: '-v, --version', desc: 'Show version number' },
+  { flag: '-n, --name <name>', desc: 'Set session display name' },
+];
+
+const cliSessions = [
+  { flag: '--continue', desc: 'Resume most recent conversation' },
+  { flag: '--resume <id>', desc: 'Resume a specific session by ID' },
+  { flag: '--from-pr <num>', desc: 'Resume session linked to a GitHub PR' },
+  { flag: '--fork-session', desc: 'Fork session with full history retained' },
+  { flag: '-w, --worktree', desc: 'Start in an isolated git worktree' },
+  { flag: '--no-session-persistence', desc: 'Don\'t save session to disk' },
+];
+
+const cliPrompt = [
+  { flag: '--system-prompt <text>', desc: 'Replace entire system prompt' },
+  { flag: '--system-prompt-file <path>', desc: 'Replace system prompt from file' },
+  { flag: '--append-system-prompt <text>', desc: 'Append text to default prompt' },
+  { flag: '--append-system-prompt-file <path>', desc: 'Append file contents to prompt' },
+];
+
+const cliTools = [
+  { flag: '--allowedTools <tools>', desc: 'Restrict which tools are available' },
+  { flag: '--disallowedTools <tools>', desc: 'Block specific tools' },
+  { flag: '--dangerously-skip-permissions', desc: 'Bypass all permission prompts' },
+  { flag: '--disable-slash-commands', desc: 'Disable all slash commands' },
+  { flag: '--permission-mode <mode>', desc: 'Set initial permission mode' },
+];
+
+const cliConfig = [
+  { flag: '--output-format <fmt>', desc: 'Output format: text, json, stream-json' },
+  { flag: '--mcp-config <path>', desc: 'Path to MCP server configuration' },
+  { flag: '--max-turns <n>', desc: 'Maximum conversation turns' },
+  { flag: '--debug <modules>', desc: 'Enable debug output (e.g. api,mcp)' },
+  { flag: '--plugin-dir <path>', desc: 'Directory to load plugins from' },
+  { flag: '--no-chrome', desc: 'Disable Chrome browser integration' },
+  { flag: '--remote <name>', desc: 'Create web session on claude.ai' },
+  { flag: '--remote-control <name>', desc: 'Interactive session with remote control' },
+  { flag: '--agents <json>', desc: 'Define ephemeral subagents as JSON' },
+];
+
+const vimNav = [
+  { key: 'h j k l', desc: 'Move left, down, up, right' },
+  { key: 'w / e / b', desc: 'Next word / end of word / back word' },
+  { key: '0 / $ / ^', desc: 'Line start / end / first non-blank' },
+  { key: 'gg / G', desc: 'Go to start / end of document' },
+  { key: 'f<c> / F<c>', desc: 'Find char forward / backward' },
+  { key: '; / ,', desc: 'Repeat / reverse last find' },
+];
+
+const vimEditing = [
+  { key: 'i / a / o', desc: 'Insert before / after / new line below' },
+  { key: 'I / A / O', desc: 'Insert at start / end / new line above' },
+  { key: 'x', desc: 'Delete character under cursor' },
+  { key: 'dd / D', desc: 'Delete line / delete to end of line' },
+  { key: 'dw / de / db', desc: 'Delete word / to end / to beginning' },
+  { key: 'cw / cc / C', desc: 'Change word / line / to end of line' },
+  { key: 'yy / yw / p / P', desc: 'Yank line / word / paste after / before' },
+  { key: '. (dot)', desc: 'Repeat last editing command' },
+  { key: '> / <', desc: 'Indent / dedent' },
+  { key: 'J', desc: 'Join current line with next' },
+  { key: 'Esc', desc: 'Return to Normal mode' },
+];
+---
+
+<Layout title="Cheatsheet — ClaudeBook">
+  <!-- NAV -->
+  <nav class="nav scrolled">
+    <div class="nav-inner">
+      <a href={base} class="nav-brand">
+        <img src={`${base}logo.png`} alt="" width="32" height="32" />
+        <span>ClaudeBook</span>
+      </a>
+      <div class="nav-links">
+        <a href={base}>Home</a>
+        <a href={`${base}cheatsheet/`} class="nav-active">Cheatsheet</a>
+        <a href="https://github.com/utensils/claudebook" class="nav-gh" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="cheat-hero">
+    <div class="cheat-hero-content">
+      <h1 class="cheat-hero-title">
+        <span class="cheat-hero-accent">Cheatsheet</span>
+        <span class="cheat-hero-sub">every command, shortcut & flag</span>
+      </h1>
+      <p class="cheat-hero-desc">
+        A quick-reference for everything built into Claude Code. Print it, bookmark it, keep it handy.
+      </p>
+    </div>
+  </section>
+
+  <!-- CHEATSHEET CONTENT -->
+  <main class="cheat-main">
+    <div class="cheat-inner">
+      <div class="cheat-grid">
+
+        <!-- Slash Commands -->
+        <div class="cheat-card reveal" style="--card-accent: var(--coral);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x2215;</span>
+            <h2>Slash Commands</h2>
+          </div>
+          <div class="cheat-rows">
+            {slashCommands.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key">
+                  <code>{item.cmd}</code>
+                  {item.aliases && <span class="cheat-alias">{item.aliases}</span>}
+                </div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div class="cheat-card-note">
+            Custom commands live in <code>.claude/commands/</code>
+          </div>
+        </div>
+
+        <!-- Keyboard Shortcuts -->
+        <div class="cheat-card reveal" style="--card-accent: var(--teal);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x2318;</span>
+            <h2>Keyboard Shortcuts</h2>
+          </div>
+          <div class="cheat-rows">
+            {shortcuts.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><kbd>{item.key}</kbd></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: Execution -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">$</span>
+            <h2>CLI &mdash; Execution</h2>
+          </div>
+          <div class="cheat-rows">
+            {cliExecution.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: Sessions -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x21bb;</span>
+            <h2>CLI &mdash; Sessions</h2>
+          </div>
+          <div class="cheat-rows">
+            {cliSessions.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: System Prompt -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x270E;</span>
+            <h2>CLI &mdash; System Prompt</h2>
+          </div>
+          <div class="cheat-rows">
+            {cliPrompt.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: Tools & Permissions -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x1F512;</span>
+            <h2>CLI &mdash; Tools & Permissions</h2>
+          </div>
+          <div class="cheat-rows">
+            {cliTools.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: Config & Integration -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x2699;</span>
+            <h2>CLI &mdash; Config & Integration</h2>
+          </div>
+          <div class="cheat-rows">
+            {cliConfig.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Vim: Navigation -->
+        <div class="cheat-card reveal" style="--card-accent: var(--teal-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x25B6;</span>
+            <h2>Vim &mdash; Navigation</h2>
+          </div>
+          <div class="cheat-rows">
+            {vimNav.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><kbd>{item.key}</kbd></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div class="cheat-card-note">
+            Enable with <code>/vim</code> or set <code>editorMode: "vim"</code> in config
+          </div>
+        </div>
+
+        <!-- Vim: Editing -->
+        <div class="cheat-card reveal" style="--card-accent: var(--teal-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x270D;</span>
+            <h2>Vim &mdash; Editing</h2>
+          </div>
+          <div class="cheat-rows">
+            {vimEditing.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><kbd>{item.key}</kbd></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Custom Commands -->
+        <div class="cheat-card cheat-card-highlight reveal" style="--card-accent: var(--coral-light);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x2728;</span>
+            <h2>Custom Commands</h2>
+          </div>
+          <p class="cheat-custom-text">
+            Create your own slash commands by adding <code>.md</code> files to your project's <code>.claude/commands/</code> directory.
+          </p>
+          <div class="cheat-custom-tips">
+            <div class="cheat-custom-tip">
+              <strong>$ARGUMENTS</strong>
+              <span>Reference user input for parameterized commands</span>
+            </div>
+            <div class="cheat-custom-tip">
+              <strong>## Steps</strong>
+              <span>Structure commands with numbered steps</span>
+            </div>
+            <div class="cheat-custom-tip">
+              <strong>Be explicit</strong>
+              <span>Specify exact commands, flags, and tool names</span>
+            </div>
+          </div>
+          <div class="cheat-card-cta">
+            <a href={base}>Browse ClaudeBook recipes &rarr;</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src={`${base}logo.png`} alt="" width="40" height="40" />
+        <span>ClaudeBook</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/utensils/claudebook" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://docs.anthropic.com/en/docs/claude-code" target="_blank" rel="noopener">Claude Code Docs</a>
+        <a href="https://github.com/utensils/claudebook/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      </div>
+      <p class="footer-note">Made with <span style="color: #E25555;">&#x2665;</span> for the Claude Code community</p>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const delay = getComputedStyle(entry.target).getPropertyValue('--delay') || '0s';
+            entry.target.style.transitionDelay = delay;
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
+    );
+    document.querySelectorAll('.reveal').forEach((el, i) => {
+      (el as HTMLElement).style.setProperty('--delay', `${i * 0.05}s`);
+      observer.observe(el);
+    });
+  </script>
+</Layout>
+
+<style>
+  /* ─── NAV ──────────────────────────────────── */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 0.8rem 1.5rem;
+    background: rgba(255, 248, 231, 0.85);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 2px 20px rgba(15, 46, 43, 0.08);
+  }
+  .nav-inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--teal-deep);
+    transition: color 0.3s;
+  }
+  .nav-brand:hover { color: var(--teal); }
+  .nav-brand img { border-radius: 6px; }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.8rem;
+    font-size: 0.92rem;
+    font-weight: 500;
+  }
+  .nav-links a {
+    color: var(--teal-deep);
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--coral); }
+  .nav-active {
+    color: var(--coral) !important;
+    font-weight: 600;
+  }
+  .nav-gh {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .nav-gh:hover { background: rgba(42, 157, 143, 0.1); }
+
+  /* ─── HERO ─────────────────────────────────── */
+  .cheat-hero {
+    padding: 7rem 1.5rem 3.5rem;
+    background: linear-gradient(160deg, var(--teal-deep) 0%, var(--teal-dark) 40%, var(--teal) 100%);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cheat-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255, 248, 231, 0.06) 1px, transparent 0);
+    background-size: 24px 24px;
+    pointer-events: none;
+  }
+  .cheat-hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .cheat-hero-title {
+    font-family: var(--font-display);
+    margin-bottom: 1rem;
+  }
+  .cheat-hero-accent {
+    display: block;
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    font-weight: 700;
+    color: var(--golden);
+    line-height: 1.15;
+  }
+  .cheat-hero-sub {
+    display: block;
+    font-size: clamp(0.95rem, 2vw, 1.15rem);
+    font-weight: 400;
+    color: rgba(255, 248, 231, 0.6);
+    letter-spacing: 0.08em;
+    margin-top: 0.3rem;
+  }
+  .cheat-hero-desc {
+    font-size: clamp(0.95rem, 2vw, 1.1rem);
+    color: rgba(255, 248, 231, 0.8);
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.65;
+  }
+
+  /* ─── MAIN ─────────────────────────────────── */
+  .cheat-main {
+    padding: clamp(3rem, 6vw, 5rem) 0;
+    position: relative;
+    z-index: 1;
+  }
+  .cheat-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* ─── GRID ─────────────────────────────────── */
+  .cheat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* ─── CARDS ────────────────────────────────── */
+  .cheat-card {
+    background: white;
+    border-radius: 18px;
+    padding: 1.8rem;
+    border-left: 4px solid var(--card-accent, var(--teal));
+    box-shadow: 0 2px 20px rgba(15, 46, 43, 0.06);
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .cheat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 35px rgba(15, 46, 43, 0.1);
+  }
+  .cheat-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--cream-dark);
+  }
+  .cheat-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--card-accent) 12%, white);
+    color: var(--card-accent);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .cheat-card-header h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--teal-deep);
+    margin: 0;
+  }
+
+  /* ─── ROWS ─────────────────────────────────── */
+  .cheat-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .cheat-row {
+    display: grid;
+    grid-template-columns: minmax(160px, auto) 1fr;
+    gap: 0.8rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgba(240, 230, 206, 0.5);
+    align-items: baseline;
+  }
+  .cheat-row:last-child {
+    border-bottom: none;
+  }
+  .cheat-key {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .cheat-key code {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--card-accent);
+    background: color-mix(in srgb, var(--card-accent) 8%, white);
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .cheat-key kbd {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--teal-deep);
+    background: var(--cream-dark);
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    border: 1px solid rgba(15, 46, 43, 0.1);
+    box-shadow: 0 1px 2px rgba(15, 46, 43, 0.06);
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .cheat-alias {
+    font-size: 0.72rem;
+    color: #78716c;
+    font-family: var(--font-mono);
+  }
+  .cheat-desc {
+    font-size: 0.88rem;
+    color: #4a6b68;
+    line-height: 1.5;
+  }
+
+  /* ─── CARD EXTRAS ──────────────────────────── */
+  .cheat-card-note {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--cream-dark);
+    font-size: 0.82rem;
+    color: #78716c;
+  }
+  .cheat-card-note code {
+    font-size: 0.78rem;
+    background: var(--cream-dark);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    color: var(--teal-deep);
+  }
+
+  /* ─── CUSTOM COMMANDS CARD ─────────────────── */
+  .cheat-card-highlight {
+    background: linear-gradient(135deg, white 0%, var(--cream) 100%);
+  }
+  .cheat-custom-text {
+    font-size: 0.95rem;
+    color: #4a6b68;
+    line-height: 1.65;
+    margin-bottom: 1.2rem;
+  }
+  .cheat-custom-text code {
+    font-size: 0.82rem;
+    background: var(--cream-dark);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    color: var(--teal-deep);
+    font-family: var(--font-mono);
+  }
+  .cheat-custom-tips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin-bottom: 1.2rem;
+  }
+  .cheat-custom-tip {
+    display: flex;
+    gap: 0.8rem;
+    align-items: baseline;
+    font-size: 0.88rem;
+  }
+  .cheat-custom-tip strong {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--coral-light);
+    background: color-mix(in srgb, var(--coral-light) 10%, white);
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .cheat-custom-tip span {
+    color: #4a6b68;
+  }
+  .cheat-card-cta {
+    padding-top: 1rem;
+    border-top: 1px solid var(--cream-dark);
+  }
+  .cheat-card-cta a {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--coral);
+    transition: color 0.2s;
+  }
+  .cheat-card-cta a:hover {
+    color: var(--coral-light);
+  }
+
+  /* ─── FOOTER ───────────────────────────────── */
+  .footer {
+    background: var(--teal-deep);
+    color: rgba(255, 248, 231, 0.7);
+    padding: 2.5rem 1.5rem;
+  }
+  .footer-inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--cream);
+  }
+  .footer-brand img { border-radius: 6px; }
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+  }
+  .footer-links a {
+    color: rgba(255, 248, 231, 0.6);
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--golden); }
+  .footer-note {
+    font-size: 0.82rem;
+    opacity: 0.5;
+  }
+
+  /* ─── SCROLL REVEAL ────────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ─── RESPONSIVE ───────────────────────────── */
+  @media (max-width: 768px) {
+    .cheat-grid {
+      grid-template-columns: 1fr;
+    }
+    .cheat-row {
+      grid-template-columns: 1fr;
+      gap: 0.2rem;
+    }
+    .nav-links a:not(.nav-gh):not(.nav-active) {
+      display: none;
+    }
+    .footer-inner {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  /* ─── PRINT ────────────────────────────────── */
+  @media print {
+    .nav, .cheat-hero { display: none; }
+    .footer { display: none; }
+    .cheat-main { padding: 0; }
+    .cheat-inner { padding: 0; max-width: 100%; }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+    }
+    .cheat-card {
+      break-inside: avoid;
+      box-shadow: none;
+      border: 1px solid #ddd;
+      border-left: 3px solid var(--card-accent);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .cheat-card:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    .reveal {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      font-size: 11px;
+    }
+    .cheat-card-header { margin-bottom: 0.6rem; padding-bottom: 0.4rem; }
+    .cheat-row { padding: 0.3rem 0; }
+
+    /* Print header */
+    .cheat-main::before {
+      content: 'Claude Code Cheatsheet — ClaudeBook';
+      display: block;
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--teal-deep);
+      text-align: center;
+      padding: 1rem 0;
+      margin-bottom: 0.5rem;
+    }
+  }
+</style>
