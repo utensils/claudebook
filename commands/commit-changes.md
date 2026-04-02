@@ -3,10 +3,11 @@ Review all uncommitted changes and create a well-structured commit using convent
 ## Steps
 
 1. **Pre-flight checks** — Ensure the code is ready to commit:
-   - Run `pnpm format` to format all modified files
-   - Run `pnpm lint` to check for linting errors
-   - Run `pnpm tsc --noEmit` to verify types compile
-   - Run `pnpm test` to ensure tests pass
+   - Detect the project's toolchain from config files (e.g., `package.json`, `Makefile`, `mix.exs`, `Cargo.toml`, `pyproject.toml`)
+   - Run the project's **format** command (e.g., `prettier`, `mix format`, `cargo fmt`, `ruff format`)
+   - Run the project's **lint** command (e.g., `eslint`, `mix credo`, `cargo clippy`, `ruff check`)
+   - Run the project's **typecheck** command if applicable (e.g., `tsc --noEmit`, `mypy`, `mix dialyzer`)
+   - Run the project's **test** command (e.g., `jest`, `mix test`, `cargo test`, `pytest`)
    - If any check fails, fix the issues before proceeding
 
 2. **Review changes** — Understand what's being committed:

@@ -17,7 +17,7 @@ Review and incorporate valid feedback from the current pull request.
 
 4. **Make changes** — For feedback you're incorporating:
    - Implement the requested changes
-   - Run `pnpm format`, `pnpm lint`, `pnpm tsc --noEmit`, and `pnpm test` after changes
+   - Run the project's format, lint, typecheck (if applicable), and test commands after changes
    - Fix any issues introduced by the changes
 
 5. **Respond to comments** — For every comment:
