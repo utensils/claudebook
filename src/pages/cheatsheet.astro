@@ -3,20 +3,99 @@ import Layout from '../layouts/Layout.astro';
 
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
 
-const slashCommands = [
-  { cmd: '/help', aliases: '', desc: 'View available commands' },
+/* ── SESSION ─────────────────────────────── */
+const session = [
   { cmd: '/clear', aliases: '/reset, /new', desc: 'Clear conversation history and free context' },
-  { cmd: '/config', aliases: '/settings', desc: 'Open settings (theme, model, preferences)' },
-  { cmd: '/vim', aliases: '', desc: 'Toggle Vim keybinding mode' },
-  { cmd: '/debug', aliases: '', desc: 'Troubleshoot session by reading debug logs' },
-  { cmd: '/agents', aliases: '', desc: 'Manage subagent configurations' },
-  { cmd: '/plugin', aliases: '', desc: 'Manage plugins (install, enable, disable)' },
-  { cmd: '/terminal-setup', aliases: '', desc: 'Configure terminal integration' },
-  { cmd: '/desktop', aliases: '', desc: 'Desktop app features (Mac/Windows)' },
-  { cmd: '/upgrade', aliases: '', desc: 'Pro/Max plan upgrade' },
-  { cmd: '/privacy-settings', aliases: '', desc: 'Privacy configuration' },
+  { cmd: '/compact [instructions]', aliases: '', desc: 'Compact conversation with optional focus' },
+  { cmd: '/resume [session]', aliases: '/continue', desc: 'Resume a conversation by ID or name' },
+  { cmd: '/branch [name]', aliases: '/fork', desc: 'Branch conversation at this point' },
+  { cmd: '/rewind', aliases: '/checkpoint', desc: 'Rewind conversation and/or code to a prior point' },
+  { cmd: '/rename [name]', aliases: '', desc: 'Rename the current session' },
+  { cmd: '/export [filename]', aliases: '', desc: 'Export conversation as plain text' },
+  { cmd: '/copy [N]', aliases: '', desc: 'Copy last response (or Nth) to clipboard' },
+  { cmd: '/btw <question>', aliases: '', desc: 'Ask a side question without adding to history' },
+  { cmd: '/exit', aliases: '/quit', desc: 'Exit the CLI' },
 ];
 
+/* ── MODEL & DISPLAY ─────────────────────── */
+const modelDisplay = [
+  { cmd: '/config', aliases: '/settings', desc: 'Open settings (theme, model, output style)' },
+  { cmd: '/model [model]', aliases: '', desc: 'Select or change the AI model' },
+  { cmd: '/effort [level]', aliases: '', desc: 'Set effort: low, medium, high, max, auto' },
+  { cmd: '/fast [on|off]', aliases: '', desc: 'Toggle fast mode' },
+  { cmd: '/theme', aliases: '', desc: 'Change color theme (light, dark, daltonized, ANSI)' },
+  { cmd: '/color [color]', aliases: '', desc: 'Set prompt bar color for current session' },
+  { cmd: '/statusline', aliases: '', desc: 'Configure the status line display' },
+  { cmd: '/vim', aliases: '', desc: 'Toggle between Vim and Normal editing modes' },
+  { cmd: '/keybindings', aliases: '', desc: 'Open keybindings configuration file' },
+  { cmd: '/terminal-setup', aliases: '', desc: 'Configure terminal keybindings (Shift+Enter, etc.)' },
+  { cmd: '/voice', aliases: '', desc: 'Toggle push-to-talk voice dictation' },
+];
+
+/* ── CODE & PROJECTS ─────────────────────── */
+const codeProjects = [
+  { cmd: '/init', aliases: '', desc: 'Initialize project with a CLAUDE.md guide' },
+  { cmd: '/memory', aliases: '', desc: 'Edit CLAUDE.md memory files and auto-memory' },
+  { cmd: '/context', aliases: '', desc: 'Visualize current context usage as a grid' },
+  { cmd: '/diff', aliases: '', desc: 'Interactive diff viewer for uncommitted changes' },
+  { cmd: '/plan [description]', aliases: '', desc: 'Enter plan mode (optionally with a task)' },
+  { cmd: '/tasks', aliases: '', desc: 'List and manage background tasks' },
+  { cmd: '/sandbox', aliases: '', desc: 'Toggle sandbox mode' },
+  { cmd: '/security-review', aliases: '', desc: 'Analyze branch changes for security vulnerabilities' },
+  { cmd: '/pr-comments [PR]', aliases: '', desc: 'Fetch and display GitHub PR comments' },
+  { cmd: '/add-dir <path>', aliases: '', desc: 'Add a working directory for the session' },
+];
+
+/* ── INTEGRATIONS ────────────────────────── */
+const integrations = [
+  { cmd: '/agents', aliases: '', desc: 'Manage subagent configurations' },
+  { cmd: '/mcp', aliases: '', desc: 'Manage MCP server connections and OAuth' },
+  { cmd: '/plugin', aliases: '', desc: 'Manage plugins (install, enable, disable)' },
+  { cmd: '/reload-plugins', aliases: '', desc: 'Reload all active plugins without restarting' },
+  { cmd: '/skills', aliases: '', desc: 'List all available skills' },
+  { cmd: '/hooks', aliases: '', desc: 'View hook configurations for tool events' },
+  { cmd: '/permissions', aliases: '/allowed-tools', desc: 'Manage allow, ask, and deny rules' },
+  { cmd: '/chrome', aliases: '', desc: 'Configure Claude in Chrome settings' },
+  { cmd: '/ide', aliases: '', desc: 'Manage IDE integrations and show status' },
+  { cmd: '/desktop', aliases: '/app', desc: 'Continue session in desktop app' },
+  { cmd: '/mobile', aliases: '/ios, /android', desc: 'QR code to download mobile app' },
+  { cmd: '/remote-control', aliases: '/rc', desc: 'Make session available for remote control' },
+  { cmd: '/remote-env', aliases: '', desc: 'Configure default remote environment' },
+  { cmd: '/schedule [desc]', aliases: '', desc: 'Create and manage cloud scheduled tasks' },
+  { cmd: '/install-github-app', aliases: '', desc: 'Set up Claude GitHub Actions for a repo' },
+  { cmd: '/install-slack-app', aliases: '', desc: 'Install the Claude Slack app' },
+];
+
+/* ── ACCOUNT & USAGE ─────────────────────── */
+const account = [
+  { cmd: '/login', aliases: '', desc: 'Sign in to your Anthropic account' },
+  { cmd: '/logout', aliases: '', desc: 'Sign out from your account' },
+  { cmd: '/cost', aliases: '', desc: 'Show token usage statistics' },
+  { cmd: '/usage', aliases: '', desc: 'Show plan usage limits and rate limit status' },
+  { cmd: '/extra-usage', aliases: '', desc: 'Configure extra usage when rate-limited' },
+  { cmd: '/status', aliases: '', desc: 'Show version, model, account, and connectivity' },
+  { cmd: '/stats', aliases: '', desc: 'Visualize daily usage, streaks, and history' },
+  { cmd: '/insights', aliases: '', desc: 'Generate a session analysis report' },
+  { cmd: '/upgrade', aliases: '', desc: 'Open upgrade page (Pro/Max)' },
+  { cmd: '/privacy-settings', aliases: '', desc: 'View and update privacy settings (Pro/Max)' },
+  { cmd: '/passes', aliases: '', desc: 'Share a free week of Claude Code' },
+  { cmd: '/help', aliases: '', desc: 'Show help and available commands' },
+  { cmd: '/feedback', aliases: '/bug', desc: 'Submit feedback about Claude Code' },
+  { cmd: '/doctor', aliases: '', desc: 'Diagnose and verify your installation' },
+  { cmd: '/release-notes', aliases: '', desc: 'View the full changelog' },
+  { cmd: '/stickers', aliases: '', desc: 'Order Claude Code stickers' },
+];
+
+/* ── BUNDLED SKILLS ──────────────────────── */
+const bundledSkills = [
+  { cmd: '/simplify [focus]', aliases: '', desc: 'Review changed files for reuse, quality, and efficiency — then fix' },
+  { cmd: '/batch <instruction>', aliases: '', desc: 'Orchestrate large-scale parallel changes across the codebase' },
+  { cmd: '/debug [description]', aliases: '', desc: 'Enable debug logging and troubleshoot session issues' },
+  { cmd: '/loop [interval] <prompt>', aliases: '', desc: 'Run a prompt repeatedly on an interval (e.g. poll a deploy)' },
+  { cmd: '/claude-api', aliases: '', desc: 'Load Claude API and SDK reference for your language' },
+];
+
+/* ── KEYBOARD SHORTCUTS ──────────────────── */
 const shortcuts = [
   { key: 'Enter / Return', desc: 'Submit message' },
   { key: 'Escape', desc: 'Cancel / exit current action' },
@@ -25,9 +104,10 @@ const shortcuts = [
   { key: 'Ctrl+R', desc: 'Reverse search through history' },
   { key: 'Ctrl+E', desc: 'Open external editor for input' },
   { key: 'Ctrl+B', desc: 'Background a long-running process' },
-  { key: '! <cmd>', desc: 'Execute shell command directly' },
+  { key: '! <cmd>', desc: 'Execute shell command directly (bash mode)' },
 ];
 
+/* ── CLI FLAGS ───────────────────────────── */
 const cliExecution = [
   { flag: '--model <name>', desc: 'Set AI model (sonnet, opus, haiku)' },
   { flag: '-p, --print', desc: 'Non-interactive print mode for scripting' },
@@ -71,6 +151,7 @@ const cliConfig = [
   { flag: '--agents <json>', desc: 'Define ephemeral subagents as JSON' },
 ];
 
+/* ── VIM MODE ────────────────────────────── */
 const vimNav = [
   { key: 'h j k l', desc: 'Move left, down, up, right' },
   { key: 'w / e / b', desc: 'Next word / end of word / back word' },
@@ -118,7 +199,7 @@ const vimEditing = [
     <div class="cheat-hero-content">
       <h1 class="cheat-hero-title">
         <span class="cheat-hero-accent">Cheatsheet</span>
-        <span class="cheat-hero-sub">every command, shortcut & flag</span>
+        <span class="cheat-hero-sub">every command, shortcut &amp; flag</span>
       </h1>
       <p class="cheat-hero-desc">
         A quick-reference for everything built into Claude Code. Print it, bookmark it, keep it handy.
@@ -129,16 +210,22 @@ const vimEditing = [
   <!-- CHEATSHEET CONTENT -->
   <main class="cheat-main">
     <div class="cheat-inner">
+
+      <!-- SECTION: SLASH COMMANDS -->
+      <h2 class="cheat-section-title reveal">
+        <span class="cheat-section-accent">Built-in Commands</span>
+        <span class="cheat-section-sub">type <code>/</code> in Claude Code to browse</span>
+      </h2>
       <div class="cheat-grid">
 
-        <!-- Slash Commands -->
+        <!-- Session & Navigation -->
         <div class="cheat-card reveal" style="--card-accent: var(--coral);">
           <div class="cheat-card-header">
-            <span class="cheat-card-icon">&#x2215;</span>
-            <h2>Slash Commands</h2>
+            <span class="cheat-card-icon">&#x21bb;</span>
+            <h3>Session &amp; Navigation</h3>
           </div>
           <div class="cheat-rows">
-            {slashCommands.map((item) => (
+            {session.map((item) => (
               <div class="cheat-row">
                 <div class="cheat-key">
                   <code>{item.cmd}</code>
@@ -148,16 +235,117 @@ const vimEditing = [
               </div>
             ))}
           </div>
-          <div class="cheat-card-note">
-            Custom commands live in <code>.claude/commands/</code>
+        </div>
+
+        <!-- Model & Display -->
+        <div class="cheat-card reveal" style="--card-accent: var(--teal);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x2699;</span>
+            <h3>Model &amp; Display</h3>
+          </div>
+          <div class="cheat-rows">
+            {modelDisplay.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key">
+                  <code>{item.cmd}</code>
+                  {item.aliases && <span class="cheat-alias">{item.aliases}</span>}
+                </div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <!-- Keyboard Shortcuts -->
+        <!-- Code & Projects -->
+        <div class="cheat-card reveal" style="--card-accent: var(--coral-light);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x2215;</span>
+            <h3>Code &amp; Projects</h3>
+          </div>
+          <div class="cheat-rows">
+            {codeProjects.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key">
+                  <code>{item.cmd}</code>
+                  {item.aliases && <span class="cheat-alias">{item.aliases}</span>}
+                </div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Integrations -->
+        <div class="cheat-card reveal" style="--card-accent: var(--teal-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x1F517;</span>
+            <h3>Integrations</h3>
+          </div>
+          <div class="cheat-rows">
+            {integrations.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key">
+                  <code>{item.cmd}</code>
+                  {item.aliases && <span class="cheat-alias">{item.aliases}</span>}
+                </div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Account & Usage -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x1F464;</span>
+            <h3>Account &amp; Usage</h3>
+          </div>
+          <div class="cheat-rows">
+            {account.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key">
+                  <code>{item.cmd}</code>
+                  {item.aliases && <span class="cheat-alias">{item.aliases}</span>}
+                </div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Bundled Skills -->
+        <div class="cheat-card cheat-card-highlight reveal" style="--card-accent: var(--coral);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x2728;</span>
+            <h3>Bundled Skills</h3>
+          </div>
+          <p class="cheat-card-subtitle">Prompt-based skills that ship with Claude Code. They orchestrate multi-step work using Claude's tools.</p>
+          <div class="cheat-rows">
+            {bundledSkills.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key">
+                  <code>{item.cmd}</code>
+                </div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SECTION: KEYBOARD SHORTCUTS -->
+      <h2 class="cheat-section-title reveal">
+        <span class="cheat-section-accent">Keyboard Shortcuts</span>
+        <span class="cheat-section-sub">interactive mode essentials</span>
+      </h2>
+      <div class="cheat-grid">
+
+        <!-- Shortcuts -->
         <div class="cheat-card reveal" style="--card-accent: var(--teal);">
           <div class="cheat-card-header">
             <span class="cheat-card-icon">&#x2318;</span>
-            <h2>Keyboard Shortcuts</h2>
+            <h3>General</h3>
           </div>
           <div class="cheat-rows">
             {shortcuts.map((item) => (
@@ -169,91 +357,11 @@ const vimEditing = [
           </div>
         </div>
 
-        <!-- CLI: Execution -->
-        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
-          <div class="cheat-card-header">
-            <span class="cheat-card-icon">$</span>
-            <h2>CLI &mdash; Execution</h2>
-          </div>
-          <div class="cheat-rows">
-            {cliExecution.map((item) => (
-              <div class="cheat-row">
-                <div class="cheat-key"><code>{item.flag}</code></div>
-                <div class="cheat-desc">{item.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <!-- CLI: Sessions -->
-        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
-          <div class="cheat-card-header">
-            <span class="cheat-card-icon">&#x21bb;</span>
-            <h2>CLI &mdash; Sessions</h2>
-          </div>
-          <div class="cheat-rows">
-            {cliSessions.map((item) => (
-              <div class="cheat-row">
-                <div class="cheat-key"><code>{item.flag}</code></div>
-                <div class="cheat-desc">{item.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <!-- CLI: System Prompt -->
-        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
-          <div class="cheat-card-header">
-            <span class="cheat-card-icon">&#x270E;</span>
-            <h2>CLI &mdash; System Prompt</h2>
-          </div>
-          <div class="cheat-rows">
-            {cliPrompt.map((item) => (
-              <div class="cheat-row">
-                <div class="cheat-key"><code>{item.flag}</code></div>
-                <div class="cheat-desc">{item.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <!-- CLI: Tools & Permissions -->
-        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
-          <div class="cheat-card-header">
-            <span class="cheat-card-icon">&#x1F512;</span>
-            <h2>CLI &mdash; Tools & Permissions</h2>
-          </div>
-          <div class="cheat-rows">
-            {cliTools.map((item) => (
-              <div class="cheat-row">
-                <div class="cheat-key"><code>{item.flag}</code></div>
-                <div class="cheat-desc">{item.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <!-- CLI: Config & Integration -->
-        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
-          <div class="cheat-card-header">
-            <span class="cheat-card-icon">&#x2699;</span>
-            <h2>CLI &mdash; Config & Integration</h2>
-          </div>
-          <div class="cheat-rows">
-            {cliConfig.map((item) => (
-              <div class="cheat-row">
-                <div class="cheat-key"><code>{item.flag}</code></div>
-                <div class="cheat-desc">{item.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <!-- Vim: Navigation -->
         <div class="cheat-card reveal" style="--card-accent: var(--teal-dark);">
           <div class="cheat-card-header">
             <span class="cheat-card-icon">&#x25B6;</span>
-            <h2>Vim &mdash; Navigation</h2>
+            <h3>Vim &mdash; Navigation</h3>
           </div>
           <div class="cheat-rows">
             {vimNav.map((item) => (
@@ -272,7 +380,7 @@ const vimEditing = [
         <div class="cheat-card reveal" style="--card-accent: var(--teal-dark);">
           <div class="cheat-card-header">
             <span class="cheat-card-icon">&#x270D;</span>
-            <h2>Vim &mdash; Editing</h2>
+            <h3>Vim &mdash; Editing</h3>
           </div>
           <div class="cheat-rows">
             {vimEditing.map((item) => (
@@ -284,14 +392,111 @@ const vimEditing = [
           </div>
         </div>
 
-        <!-- Custom Commands -->
+      </div>
+
+      <!-- SECTION: CLI FLAGS -->
+      <h2 class="cheat-section-title reveal">
+        <span class="cheat-section-accent">CLI Flags</span>
+        <span class="cheat-section-sub">launch-time options for <code>claude</code></span>
+      </h2>
+      <div class="cheat-grid">
+
+        <!-- CLI: Execution -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">$</span>
+            <h3>Execution</h3>
+          </div>
+          <div class="cheat-rows">
+            {cliExecution.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: Sessions -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x21bb;</span>
+            <h3>Sessions</h3>
+          </div>
+          <div class="cheat-rows">
+            {cliSessions.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: System Prompt -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x270E;</span>
+            <h3>System Prompt</h3>
+          </div>
+          <div class="cheat-rows">
+            {cliPrompt.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: Tools & Permissions -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x1F512;</span>
+            <h3>Tools &amp; Permissions</h3>
+          </div>
+          <div class="cheat-rows">
+            {cliTools.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- CLI: Config & Integration -->
+        <div class="cheat-card reveal" style="--card-accent: var(--golden-dark);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x2699;</span>
+            <h3>Config &amp; Integration</h3>
+          </div>
+          <div class="cheat-rows">
+            {cliConfig.map((item) => (
+              <div class="cheat-row">
+                <div class="cheat-key"><code>{item.flag}</code></div>
+                <div class="cheat-desc">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SECTION: CUSTOM COMMANDS -->
+      <h2 class="cheat-section-title reveal">
+        <span class="cheat-section-accent">Custom Skills</span>
+        <span class="cheat-section-sub">extend Claude Code with your own commands</span>
+      </h2>
+      <div class="cheat-grid">
+
         <div class="cheat-card cheat-card-highlight reveal" style="--card-accent: var(--coral-light);">
           <div class="cheat-card-header">
-            <span class="cheat-card-icon">&#x2728;</span>
-            <h2>Custom Commands</h2>
+            <span class="cheat-card-icon">&#x1F4DD;</span>
+            <h3>Create Your Own</h3>
           </div>
           <p class="cheat-custom-text">
-            Create your own slash commands by adding <code>.md</code> files to your project's <code>.claude/commands/</code> directory.
+            Add <code>SKILL.md</code> files to <code>.claude/skills/</code> (or <code>.md</code> files to <code>.claude/commands/</code>) and they become slash commands.
           </p>
           <div class="cheat-custom-tips">
             <div class="cheat-custom-tip">
@@ -299,12 +504,16 @@ const vimEditing = [
               <span>Reference user input for parameterized commands</span>
             </div>
             <div class="cheat-custom-tip">
-              <strong>## Steps</strong>
-              <span>Structure commands with numbered steps</span>
+              <strong>context: fork</strong>
+              <span>Run in a subagent for isolated execution</span>
             </div>
             <div class="cheat-custom-tip">
-              <strong>Be explicit</strong>
-              <span>Specify exact commands, flags, and tool names</span>
+              <strong>allowed-tools</strong>
+              <span>Restrict which tools the skill can access</span>
+            </div>
+            <div class="cheat-custom-tip">
+              <strong>!`command`</strong>
+              <span>Inject dynamic shell output into skill content</span>
             </div>
           </div>
           <div class="cheat-card-cta">
@@ -312,7 +521,32 @@ const vimEditing = [
           </div>
         </div>
 
+        <div class="cheat-card reveal" style="--card-accent: var(--coral-light);">
+          <div class="cheat-card-header">
+            <span class="cheat-card-icon">&#x1F4C1;</span>
+            <h3>Skill Locations</h3>
+          </div>
+          <div class="cheat-rows">
+            <div class="cheat-row">
+              <div class="cheat-key"><code>~/.claude/skills/</code></div>
+              <div class="cheat-desc">Personal skills — available in all projects</div>
+            </div>
+            <div class="cheat-row">
+              <div class="cheat-key"><code>.claude/skills/</code></div>
+              <div class="cheat-desc">Project skills — this project only</div>
+            </div>
+            <div class="cheat-row">
+              <div class="cheat-key"><code>.claude/commands/</code></div>
+              <div class="cheat-desc">Legacy commands — still supported</div>
+            </div>
+          </div>
+          <div class="cheat-card-note">
+            Skills take precedence when a skill and command share the same name.
+          </div>
+        </div>
+
       </div>
+
     </div>
   </main>
 
@@ -347,7 +581,7 @@ const vimEditing = [
       { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
     );
     document.querySelectorAll('.reveal').forEach((el, i) => {
-      (el as HTMLElement).style.setProperty('--delay', `${i * 0.05}s`);
+      (el as HTMLElement).style.setProperty('--delay', `${Math.min(i * 0.04, 0.4)}s`);
       observer.observe(el);
     });
   </script>
@@ -452,6 +686,13 @@ const vimEditing = [
     letter-spacing: 0.08em;
     margin-top: 0.3rem;
   }
+  .cheat-hero-sub code {
+    background: rgba(255, 248, 231, 0.15);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.95em;
+    color: var(--golden-light);
+  }
   .cheat-hero-desc {
     font-size: clamp(0.95rem, 2vw, 1.1rem);
     color: rgba(255, 248, 231, 0.8);
@@ -462,28 +703,60 @@ const vimEditing = [
 
   /* ─── MAIN ─────────────────────────────────── */
   .cheat-main {
-    padding: clamp(3rem, 6vw, 5rem) 0;
+    padding: clamp(2.5rem, 5vw, 4rem) 0;
     position: relative;
     z-index: 1;
   }
   .cheat-inner {
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
     padding: 0 1.5rem;
+  }
+
+  /* ─── SECTION TITLES ───────────────────────── */
+  .cheat-section-title {
+    text-align: center;
+    margin: 3.5rem 0 2rem;
+  }
+  .cheat-section-title:first-of-type {
+    margin-top: 0;
+  }
+  .cheat-section-accent {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    font-weight: 700;
+    color: var(--teal-deep);
+  }
+  .cheat-section-sub {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--teal-dark);
+    opacity: 0.7;
+    margin-top: 0.2rem;
+    font-weight: 400;
+  }
+  .cheat-section-sub code {
+    background: var(--cream-dark);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--teal-deep);
   }
 
   /* ─── GRID ─────────────────────────────────── */
   .cheat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     gap: 1.5rem;
+    margin-bottom: 1rem;
   }
 
   /* ─── CARDS ────────────────────────────────── */
   .cheat-card {
     background: white;
     border-radius: 18px;
-    padding: 1.8rem;
+    padding: 1.6rem;
     border-left: 4px solid var(--card-accent, var(--teal));
     box-shadow: 0 2px 20px rgba(15, 46, 43, 0.06);
     transition: transform 0.25s, box-shadow 0.25s;
@@ -496,43 +769,48 @@ const vimEditing = [
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    margin-bottom: 1.2rem;
-    padding-bottom: 0.8rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.7rem;
     border-bottom: 1px solid var(--cream-dark);
   }
   .cheat-card-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
     background: color-mix(in srgb, var(--card-accent) 12%, white);
     color: var(--card-accent);
     font-family: var(--font-mono);
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1rem;
     flex-shrink: 0;
   }
-  .cheat-card-header h2 {
+  .cheat-card-header h3 {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     color: var(--teal-deep);
     margin: 0;
+  }
+  .cheat-card-subtitle {
+    font-size: 0.85rem;
+    color: #78716c;
+    line-height: 1.55;
+    margin-bottom: 0.8rem;
   }
 
   /* ─── ROWS ─────────────────────────────────── */
   .cheat-rows {
     display: flex;
     flex-direction: column;
-    gap: 0;
   }
   .cheat-row {
     display: grid;
-    grid-template-columns: minmax(160px, auto) 1fr;
-    gap: 0.8rem;
-    padding: 0.55rem 0;
+    grid-template-columns: minmax(140px, auto) 1fr;
+    gap: 0.7rem;
+    padding: 0.45rem 0;
     border-bottom: 1px solid rgba(240, 230, 206, 0.5);
     align-items: baseline;
   }
@@ -542,26 +820,26 @@ const vimEditing = [
   .cheat-key {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.15rem;
   }
   .cheat-key code {
     font-family: var(--font-mono);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--card-accent);
     background: color-mix(in srgb, var(--card-accent) 8%, white);
-    padding: 0.15rem 0.5rem;
+    padding: 0.12rem 0.45rem;
     border-radius: 5px;
     display: inline-block;
     white-space: nowrap;
   }
   .cheat-key kbd {
     font-family: var(--font-mono);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 500;
     color: var(--teal-deep);
     background: var(--cream-dark);
-    padding: 0.2rem 0.55rem;
+    padding: 0.15rem 0.5rem;
     border-radius: 5px;
     border: 1px solid rgba(15, 46, 43, 0.1);
     box-shadow: 0 1px 2px rgba(15, 46, 43, 0.06);
@@ -569,46 +847,46 @@ const vimEditing = [
     white-space: nowrap;
   }
   .cheat-alias {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     color: #78716c;
     font-family: var(--font-mono);
   }
   .cheat-desc {
-    font-size: 0.88rem;
+    font-size: 0.84rem;
     color: #4a6b68;
-    line-height: 1.5;
+    line-height: 1.45;
   }
 
   /* ─── CARD EXTRAS ──────────────────────────── */
   .cheat-card-note {
-    margin-top: 1rem;
-    padding-top: 0.8rem;
+    margin-top: 0.8rem;
+    padding-top: 0.7rem;
     border-top: 1px solid var(--cream-dark);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     color: #78716c;
   }
   .cheat-card-note code {
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     background: var(--cream-dark);
-    padding: 0.1rem 0.35rem;
+    padding: 0.1rem 0.3rem;
     border-radius: 4px;
     color: var(--teal-deep);
   }
 
-  /* ─── CUSTOM COMMANDS CARD ─────────────────── */
+  /* ─── HIGHLIGHT CARD ───────────────────────── */
   .cheat-card-highlight {
     background: linear-gradient(135deg, white 0%, var(--cream) 100%);
   }
   .cheat-custom-text {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #4a6b68;
-    line-height: 1.65;
-    margin-bottom: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
   }
   .cheat-custom-text code {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     background: var(--cream-dark);
-    padding: 0.1rem 0.4rem;
+    padding: 0.1rem 0.35rem;
     border-radius: 4px;
     color: var(--teal-deep);
     font-family: var(--font-mono);
@@ -616,21 +894,21 @@ const vimEditing = [
   .cheat-custom-tips {
     display: flex;
     flex-direction: column;
-    gap: 0.7rem;
-    margin-bottom: 1.2rem;
+    gap: 0.55rem;
+    margin-bottom: 1rem;
   }
   .cheat-custom-tip {
     display: flex;
-    gap: 0.8rem;
+    gap: 0.7rem;
     align-items: baseline;
-    font-size: 0.88rem;
+    font-size: 0.84rem;
   }
   .cheat-custom-tip strong {
     font-family: var(--font-mono);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     color: var(--coral-light);
     background: color-mix(in srgb, var(--coral-light) 10%, white);
-    padding: 0.15rem 0.5rem;
+    padding: 0.12rem 0.45rem;
     border-radius: 5px;
     white-space: nowrap;
     flex-shrink: 0;
@@ -639,13 +917,13 @@ const vimEditing = [
     color: #4a6b68;
   }
   .cheat-card-cta {
-    padding-top: 1rem;
+    padding-top: 0.8rem;
     border-top: 1px solid var(--cream-dark);
   }
   .cheat-card-cta a {
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     color: var(--coral);
     transition: color 0.2s;
   }
@@ -711,7 +989,7 @@ const vimEditing = [
     }
     .cheat-row {
       grid-template-columns: 1fr;
-      gap: 0.2rem;
+      gap: 0.15rem;
     }
     .nav-links a:not(.nav-gh):not(.nav-active) {
       display: none;
@@ -731,14 +1009,14 @@ const vimEditing = [
     .cheat-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.8rem;
+      gap: 0.6rem;
     }
     .cheat-card {
       break-inside: avoid;
       box-shadow: none;
       border: 1px solid #ddd;
       border-left: 3px solid var(--card-accent);
-      padding: 1rem;
+      padding: 0.8rem;
       border-radius: 8px;
     }
     .cheat-card:hover {
@@ -752,22 +1030,22 @@ const vimEditing = [
     body {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
-      font-size: 11px;
+      font-size: 10px;
     }
-    .cheat-card-header { margin-bottom: 0.6rem; padding-bottom: 0.4rem; }
-    .cheat-row { padding: 0.3rem 0; }
+    .cheat-section-title { margin: 1.5rem 0 0.8rem; }
+    .cheat-card-header { margin-bottom: 0.4rem; padding-bottom: 0.3rem; }
+    .cheat-row { padding: 0.2rem 0; }
 
-    /* Print header */
     .cheat-main::before {
       content: 'Claude Code Cheatsheet — ClaudeBook';
       display: block;
       font-family: var(--font-display);
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--teal-deep);
       text-align: center;
-      padding: 1rem 0;
-      margin-bottom: 0.5rem;
+      padding: 0.8rem 0;
+      margin-bottom: 0.3rem;
     }
   }
 </style>
